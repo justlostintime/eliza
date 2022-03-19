@@ -1,0 +1,143 @@
+' Gambas class file
+
+Private ElizaKeyWords As Collection
+Private ElizaConjugations As Collection
+Private ElizaReplies As String[]
+Private ElizaFindReply As Integer[]
+Private ElizaFindReplyR As Integer[]
+Private ElizaFindReplyN As Integer[]
+
+Private DataBuffer As String
+
+Public Sub Form_Open()
+
+  Dim loadtemp As String[]
+  Dim i As Integer
+  Dim s As String
+
+  ElizaKeyWords = New Collection(gb.ignorecase)
+  i = 0
+  loadtemp = Split(File.Load("KeyWord.data"), "\n", "\"\"", True, False)
+  For Each s In loadtemp
+    ElizaKeyWords.Add(i, s)
+    Inc i
+  Next
+
+  ElizaConjugations = New Collection(gb.ignorecase)
+  loadtemp = Split(File.Load("Conjugations"), "\n", "\"\"", True, False)
+  For i = 0 To loadtemp.max Step 2
+    ElizaConjugations.Add(loadtemp[i + 1], loadtemp[i])
+  Next
+
+  ElizaReplies = Split(File.Load("Replies.data"), "\n", "\"\"", True, False)
+
+  ElizaFindReply = New Integer[]
+  ElizaFindReplyR = New Integer[]
+  ElizaFindReplyN = New Integer[]
+
+  loadtemp = Split(File.Load("FindReply.data"), ",")
+  For i = 0 To loadtemp.max Step 2
+    ElizaFindReply.Add(CInt(Trim(loadtemp[i])) - 1)
+    ElizaFindReplyR.Add(CInt(Trim(loadtemp[i])) - 1)
+    ElizaFindReplyN.Add((CInt(Trim(loadtemp[i])) - 1) + CInt(Trim(loadtemp[i + 1])) - 1)
+  Next
+
+  SpeakNow.Print("HI! I'M ELIZA. WHAT'S YOUR PROBLEM?\r\n")
+
+End
+
+Public Sub SpeakNow_KeyPress()
+
+  Dim mykey As String = key.text
+
+  If IsAscii(mykey)          'isletter(mykey) or isnumber(mykey) or ispunct(mykey) or mykey = "\n" or mykey = "\r" OR isSpace(mykey) Then
+    SpeakNow.Print(myKey)
+
+    If Asc(mykey) = 13 Then
+      SpeakNow.Print("\n")
+      SaySomething(DataBuffer)
+      DataBuffer = ""
+    Else
+      DataBuffer &= myKey
+    Endif
+
+  Endif
+
+End
+
+Sub SaySomething(TheySay As String)
+
+  Static lastSpoken As String = ""
+  Dim index As Integer = 36
+  Dim NowTheySay As String = NormalizeSentance(TheySay)
+  Dim response As String
+
+  If TheySay Like "*SHUT*" Then
+    Print "Good bye"
+    Quit 0
+  Endif
+
+  If lastSpoken == NowTheySay Then
+    SpeakNow.Print("Please Don't repeat yourself\r\n")
+    Return
+  Endif
+
+  lastSpoken = NowTheySay
+
+  For Each s As String In ElizaKeyWords
+    Dim lastkey As String = ElizaKeyWords.key
+    If s = ElizaKeyWords.last Then Break
+    Print "Checking :";; s;; lastkey
+    If InStr(NowTheySay, lastkey) > 0 Then
+      index = CInt(s)
+      If index = 13 Then
+        If InStr(NowTheySay, " YOUR ") > 0 Then
+          index = 29
+        Endif
+      Endif
+      Break
+    Endif
+  Next
+
+  Print "Found this keyword or phrase :";; s;; lastkey
+  If lastkey = "NOKEYFOUND" Then
+    Response = "YOU WILL HAVE TO ELABORATE MORE FOR ME TO HELP YOU"
+  Else
+    response = ElizaReplies[ElizaFindReply[index]]
+  Endif
+  If Right(response, 1) = "*" Then
+    TheySay = Conjugate(TheySay, lastkey)
+    SpeakNow.Print(Left(response, -1) & " " & Upper(TheySay) & "\n\r")
+    Return
+  Else
+    SpeakNow.Print(response & "\n\r")
+  Endif
+
+End
+
+Sub Conjugate(source As String, keyfound As String) As String
+
+  Dim reply As String = ""
+
+  reply = Upper(source)
+  reply = Right(source, -(InStr(source, keyfound) + Len(keyfound)))
+  For Each s As String In ElizaConjugations
+    Dim thekey As String = ElizaConjugations.key
+    reply = Replace(reply, Trim(thekey), Trim(s), gb.ignorecase)
+  Next
+  Return reply
+
+End
+
+Sub NormalizeSentance(Theysay As String) As String
+
+  Dim Outbuf As String = ""
+
+  outbuf = Upper(Trim(Theysay))
+  outbuf = string.RemoveDiacritics(outbuf)
+  Outbuf = RegExp.Replace(outbuf, "\\s{2,}+", " ")
+
+  Print outbuf
+  Return " " & outbuf & " "
+
+End

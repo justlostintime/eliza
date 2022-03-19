@@ -1,0 +1,18 @@
+# Gambas Project File 3.0
+Title=Eliza
+Startup=FMain
+Version=1.1.1
+Component=gb.image
+Component=gb.gui
+Component=gb.form
+Component=gb.util
+Component=gb.term
+Component=gb.form.terminal
+Component=gb.pcre
+Description="Your personal Phyciatrist"
+Authors="Anon"
+TabSize=2
+Translate=1
+Language=en_US
+Vendor=Westwood
+Packager=1

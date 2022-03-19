@@ -1,0 +1,8 @@
+# Gambas Form File 3.0
+
+{ Form Form
+  MoveScaled(0,0,141,66)
+  { SpeakNow TerminalView
+    MoveScaled(0,5,127,61)
+  }
+}
